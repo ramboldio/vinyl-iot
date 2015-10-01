@@ -12,22 +12,20 @@ spark.login({accessToken: spark_access_token}, function () {
   console.log("[ OK ] connected to particle cloud");
 });
 
+var currentTracks, m;
 // create modipy instance
 var mopidy = new Mopidy({
-    webSocketUrl: "ws://"+mopidy_ip+":6680/mopidy/ws/",
-    callingConvention : "by-position-or-by-name"
+    webSocketUrl: "ws://"+mopidy_ip+":6680/mopidy/ws/"
 });
 mopidy.on("state:online", function () {
+    m = mopidy;
   console.log("[ OK ] connected to mopidy server on "+mopidy_ip);
 });
 
 
-var currentTracks;
 
-spark.onEvent('album selected', function(album) {
-  mopidy.on("state:online", function() {
-    getAlbumAndPlay(album);
-  });
+spark.onEvent('album selected', function(response) {
+    getAlbumAndPlay(response.data);
 });
 
 spark.onEvent('album removed', function() {
@@ -39,15 +37,31 @@ spark.onEvent('album removed', function() {
 function getAlbumAndPlay (albumTitle){
 
   albumTitle = albumTitle || "Stadtaffe";
+  console.log("Album '"+ albumTitle +"' selected");
 
-  mopidy.library.search({"album":albumTitle}).then(function (results) {
-      // uri of first album in results
-      var uri = results[0].albums[0].uri;
+  m.library.search({"album":albumTitle}).then(function (results) {
 
-      mopidy.library.lookup(uri).then(function(response){
-        mopidy.tracklist.add(response, 0).then(function (tlTracks) {
+      var localResults, spotifyResults, uri;
+
+      // select local search
+      if (results[0].uri == "local:search"){
+        localResults = results[0];
+        spotifyResults = results[1];
+      } else {
+        localResults = results[1];
+        spotifyResults = results[0];
+      }
+
+      if (localResults.albums != undefined){
+        uri = localResults.albums[0].uri;
+      } else {
+        uri = spotifyResults.albums[0].uri;
+      }
+
+      m.library.lookup(uri).then(function(response){
+        m.tracklist.add(response, 0).then(function (tlTracks) {
           currentTracks = tlTracks;
-          mopidy.playback.play(tlTracks[0]);
+          m.playback.play(tlTracks[0]);
         });
       });
     });
