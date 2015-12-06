@@ -13,6 +13,6 @@
     "spark": "^1.0.0"
   },
   "scripts" : {
-    "start" : "albumSelector.js"
+    "start" : "node albumSelector.js"
   }
 }

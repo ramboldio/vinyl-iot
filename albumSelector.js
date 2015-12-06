@@ -24,7 +24,7 @@ mopidy.on("state:online", function () {
 
 
 
-spark.onEvent('album selected', function(response) {
+spark.onEvent('play', function(response) {
     getAlbumAndPlay(response.data);
 });
 
